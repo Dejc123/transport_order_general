@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Transport Order</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #ffffff;
+    margin: 0;
+    padding: 0;
+}
+
+#container {
+    display: flex;
+    max-width: 950px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #fff;
+}
+
+#menu {
+    width: 170px;
+    min-width: 170px;
+    border-right: 1px solid #ccc;
+    padding-right: 12px;
+}
+
+#menu h3 { margin-top: 0; }
+#menu ul { list-style: none; padding-left: 0; }
+#menu ul li { margin: 10px 0; }
+#menu ul li a { 
+    text-decoration: none; 
+    color:#0066cc; 
+    font-weight:bold; 
+}
+
+#content {
+    flex-grow: 1;
+    padding-left: 25px;
+}
+
+h2 {
+    color:#003366;
+    margin-top:0;
+    border-bottom:2px solid #003366;
+    padding-bottom:5px;
+    text-align:center;
+}
+
+.section {
+    background:#f9f9f9;
+    padding:10px;
+    margin-top:10px;
+    border-radius:5px;
+    border:1px solid #ccc;
+}
+
+.form-group {
+    display:flex;
+    align-items:center;
+    margin-top:6px;
+}
+
+.form-group label {
+    width: 140px;
+    margin-right: 10px;
+    font-weight:bold;
+    font-size:13px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    flex: 1;
+    padding:4px;
+    font-size:13px;
+}
+
+textarea {
+    height: 40px;
+}
+#special_remarks { height: 90px; }
+
+.checkbox-group {
+    display:flex;
+    align-items:center;
+    margin-top:6px;
+    font-size:13px;
+}
+.checkbox-group input { width:auto; margin-right:8px; }
+
+.hidden { display:none; }
+
+.flex-row { display:flex; gap:15px; flex-wrap:wrap; }
+.flex-col { flex:1; min-width:260px; }
+
+.btn-row {
+    margin-top:20px;
+    display:flex;
+    gap:12px;
+}
+
+button {
+    padding:10px 18px;
+    background:#0066cc;
+    color:#fff;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:14px;
+}
+button:hover { background:#0052a3; }
+
+/* PDF / Print Friendly */
+@media print, .pdf-export {
+    button, #menu { 
+        display: none !important;
+    }
+    #content {
+        max-width: 8in;
+        margin: 0 auto;
+        padding: 0.5in;
+        background: #fff;
+    }
+    .form-group, .section, .flex-row, .flex-col {
+        page-break-inside: avoid;
+    }
+}
+</style>
+</head>
+
+<script>
+function toggleField(fieldId) {
+    const el = document.getElementById(fieldId);
+    if(el) el.classList.toggle('hidden');
+}
+
+function clearForm() {
+    document.querySelectorAll('#content input, #content textarea').forEach(el => el.value = '');
+    document.querySelectorAll('#content input[type=checkbox]').forEach(ch => ch.checked = false);
+    // skrije dodatna polja
+    ['fixBookingLoadingTime','fixBookingUnloadingTime','exchangePalletsNumber','tempControlValue'].forEach(id => document.getElementById(id).classList.add('hidden'));
+}
+
+function generatePDF() {
+    const element = document.getElementById('content');
+    element.classList.add('pdf-export');
+
+    html2pdf().set({
+        margin: [0.4, 0.4, 0.4, 0.4],
+        filename: 'Transport_Order.pdf',
+        html2canvas: { scale: 2, logging:true, useCORS:true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    }).from(element).save()
+      .then(() => element.classList.remove('pdf-export'));
+}
+
+// OPTIONAL: Auto-calculate total price
+function calculateTotal() {
+    const price = parseFloat(document.getElementById('price').value) || 0;
+    const discount = parseFloat(document.getElementById('discount').value) || 0;
+    const total = price - (price * discount / 100);
+    document.getElementById('total').value = total.toFixed(2);
+}
+</script>
+
+<body>
+<div id="container">
+
+    <!-- LEFT MENU -->
+    <div id="menu">
+        <h3>Menu</h3>
+        <ul>
+            <li><a href="https://www.cargotrans.net/layout1.asp?stran=defaultShipper" target="_blank">Home</a></li>
+        </ul>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="content">
+
+        <h2>Transport Order</h2>
+
+        <div class="flex-row">
+
+            <!-- LEFT COLUMN -->
+            <div class="flex-col">
+
+                <h3>Shipper / Carrier</h3>
+                <div class="form-group"><label>Shipper:</label><input type="text" id="shipper_company"></div>
+                <div class="form-group"><label>Shipper Contact:</label><input type="text" id="shipper_contact"></div>
+                <div class="form-group"><label>Carrier:</label><input type="text" id="carrier_company"></div>
+                <div class="form-group"><label>Carrier Contact:</label><input type="text" id="carrier_contact"></div>
+
+                <h3>Price</h3>
+                <div class="form-group"><label>Price (EUR):</label><input type="number" id="price" oninput="calculateTotal()"></div>
+                <div class="form-group"><label>Payment Term (days):</label><input type="number" id="payment_terms" value="30"></div>
+                <div class="form-group"><label>Discount (%):</label><input type="number" id="discount" value="0" oninput="calculateTotal()"></div>
+                <div class="form-group"><label>Total EUR:</label><input type="number" id="total" readonly></div>
+
+                <h3>Loading Location</h3>
+                <div class="form-group"><label>City:</label><input type="text" id="load_city"></div>
+                <div class="form-group"><label>Address:</label><input type="text" id="load_address"></div>
+                <div class="form-group"><label>Postal Code:</label><input type="text" id="load_postcode"></div>
+                <div class="form-group"><label>Country:</label><input type="text" id="load_country"></div>
+
+                <h3>Loading</h3>
+                <div class="form-group"><label>Loading Date:</label><input type="date" id="loading_date"></div>
+                <div class="form-group"><label>Time Interval:</label><input type="time" id="loading_from"> to <input type="time" id="loading_to"></div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="fixBookingLoading" onchange="toggleField('fixBookingLoadingTime')">
+                    <label>Fixed Booking</label>
+                </div>
+                <div id="fixBookingLoadingTime" class="hidden form-group">
+                    <label>Exact Time:</label><input type="time" id="fix_booking_loading_time">
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="flex-col">
+
+                <h3>Unloading Location</h3>
+                <div class="form-group"><label>City:</label><input type="text" id="unload_city"></div>
+                <div class="form-group"><label>Address:</label><input type="text" id="unload_address"></div>
+                <div class="form-group"><label>Postal Code:</label><input type="text" id="unload_postcode"></div>
+                <div class="form-group"><label>Country:</label><input type="text" id="unload_country"></div>
+
+                <h3>Unloading</h3>
+                <div class="form-group"><label>Delivery Date:</label><input type="date" id="unloading_date"></div>
+                <div class="form-group"><label>Time Interval:</label><input type="time" id="unloading_from"> to <input type="time" id="unloading_to"></div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="fixBookingUnloading" onchange="toggleField('fixBookingUnloadingTime')">
+                    <label>Fixed Booking</label>
+                </div>
+                <div id="fixBookingUnloadingTime" class="hidden form-group">
+                    <label>Exact Time:</label><input type="time" id="fix_booking_unloading_time">
+                </div>
+
+                <h3>Pallets and Temperature</h3>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="exchangePallets" onchange="toggleField('exchangePalletsNumber')">
+                    <label>Pallet Exchange (NO)</label>
+                </div>
+                <div id="exchangePalletsNumber" class="hidden form-group">
+                    <label>Quantity:</label><input type="number" id="number_of_exchange_pallets">
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="tempControl" onchange="toggleField('tempControlValue')">
+                    <label>Temperature Control (NO)</label>
+                </div>
+                <div id="tempControlValue" class="hidden form-group">
+                    <label>Temperature °C:</label><input type="text" id="temperature_value" placeholder="+/- XX">
+                </div>
+
+                <h3>Special Remarks</h3>
+                <textarea id="special_remarks"></textarea>
+
+            </div>
+
+        </div>
+
+        <div class="btn-row">
+            <button onclick="generatePDF()">Generate PDF</button>
+            <button onclick="clearForm()">Clear Form</button>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>
